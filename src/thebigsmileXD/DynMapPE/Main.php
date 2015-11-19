@@ -10,20 +10,14 @@ use pocketmine\command\Command;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\command\ConsoleCommandSender;
 use pocketmine\event\player\PlayerMoveEvent;
-use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
-use pocketmine\event\player\PlayerItemConsumeEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\utils\Config;
-use pocketmine\event\player\PlayerDropItemEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityArmorChangeEvent;
-use pocketmine\event\entity\EntityInventoryChangeEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
-use pocketmine\event\entity\EntityShootBowEvent;
 use pocketmine\event\entity\EntityTeleportEvent;
-use pocketmine\event\entity\EntityDamageByBlockEvent;
 use pocketmine\event\player\PlayerBucketFillEvent;
 use pocketmine\event\player\PlayerBucketEmptyEvent;
 use pocketmine\event\entity\EntityLevelChangeEvent;
@@ -38,6 +32,14 @@ class Main extends PluginBase implements Listener{
 		$this->makeSaveFiles();
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 		if($this->useSQL) $this->connectSQL();
+	}
+
+	public function onDisable(){
+		$request = "DELETE FROM `dynmap_players`";
+		if(!$result = $this->database->query($request)){
+			$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
+		}
+		$this->database->close();
 	}
 
 	private function makeSaveFiles(){
@@ -97,8 +99,15 @@ class Main extends PluginBase implements Listener{
 			$this->getLogger()->critical('There was an error running the query [' . $this->database->error . ']');
 		}
 		else{
-			$this->getLogger()->notice('Successfully created database');
+			$this->getLogger()->notice('Successfully created database `dynmap_players`');
 		}
+		/*$request = "CREATE TABLE `dynmap_worlds` ( `id` INT NOT NULL AUTO_INCREMENT , `world` VARCHAR(100) NOT NULL , `spawn` DOUBLE NOT NULL, `y` DOUBLE NOT NULL, `z` DOUBLE NOT NULL, `health` DOUBLE NOT NULL, `armor` DOUBLE NOT NULL, PRIMARY KEY (`id`), UNIQUE (`name`)) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_unicode_ci";
+		if(!$result = $this->database->query($request)){
+			$this->getLogger()->critical('There was an error running the query [' . $this->database->error . ']');
+		}
+		else{
+			$this->getLogger()->notice('Successfully created database `dynmap_players`');
+		}*/
 	}
 
 	/* eventhandler */
@@ -185,11 +194,13 @@ class Main extends PluginBase implements Listener{
 
 	public function onLevelChange(EntityLevelChangeEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName();
+			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "',`health` = '" . $event->getEntity()->getHealth() . "',`armor` = '" . $event->getEntity()->getHealth() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName(); // added health and armor because manyworlds, fix armor!
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
 			return;
 		}
 	}
+	
+	public function chunkUpdate()
 }
