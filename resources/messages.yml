@@ -1,0 +1,5 @@
+---
+german:
+ - no-permission: "Keine Berechtigung"
+ - invalid-arguments: "Falsche Argumente"
+...
