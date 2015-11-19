@@ -21,12 +21,17 @@ use pocketmine\event\entity\EntityTeleportEvent;
 use pocketmine\event\player\PlayerBucketFillEvent;
 use pocketmine\event\player\PlayerBucketEmptyEvent;
 use pocketmine\event\entity\EntityLevelChangeEvent;
+use pocketmine\event\player\PlayerJoinEvent;
 
 class Main extends PluginBase implements Listener{
 	public $database;
 	public $useSQL = true;
 	public $worlds = [];
 	public $messages = false;
+	public $updateOnBreak = false;
+	public $updateOnPlace = false;
+	public $updateChat = false;
+	public $updateOnBucketUse = false;
 
 	public function onEnable(){
 		$this->makeSaveFiles();
@@ -40,6 +45,7 @@ class Main extends PluginBase implements Listener{
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
+			$this->database->query("ALTER TABLE `dynmap_players` AUTO_INCREMENT = 1");
 			$this->database->close();
 		}
 	}
@@ -116,15 +122,25 @@ class Main extends PluginBase implements Listener{
 
 	/* eventhandler */
 	public function onQuit(PlayerQuitEvent $event){
-		$request = "DELETE FROM `dynmap_players` WHERE `dynmap_players`.`name` = " . $event->getPlayer()->getName();
+		$request = "DELETE FROM `dynmap_players` WHERE `dynmap_players`.`name` = '" . $event->getPlayer()->getName() . "'";
 		if(!$result = $this->database->query($request)){
 			$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 		}
 		return;
 	}
 
+	public function onJoin(PlayerJoinEvent $event){
+		$request = "INSERT INTO `dynmap_players`(`id`, `name`, `world`, `x`, `y`, `z`, `health`, `armor`) VALUES (NULL,'" . $event->getPlayer()->getName() . "','" . $event->getPlayer()->getLevel()->getName() . "','" . $event->getPlayer()->getX() . "','" . $event->getPlayer()->getY() . "','" . $event->getPlayer()->getZ() . "','" . $event->getPlayer()->getHealth() . "','" . $event->getPlayer()->getHealth() . "')";
+		if(!$result = $this->database->query($request)){
+			$this->getLogger()->critical('There was an error running the query [' . $this->database->error . ']');
+		}
+		else{
+			$this->getLogger()->notice('Successfully added player `' . $event->getPlayer()->getName() . '`');
+		}
+	}
+
 	public function onMove(PlayerMoveEvent $event){
-		$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getPlayer()->getLevel()->getName() . "' ,`x` = '" . $event->getPlayer()->getX() . "',`y` = '" . $event->getPlayer()->getY() . "',`z` = '" . $event->getPlayer()->getZ() . "' WHERE `dynmap_players`.`name` = " . $event->getPlayer()->getName();
+		$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getPlayer()->getLevel()->getName() . "' ,`x` = '" . $event->getPlayer()->getX() . "',`y` = '" . $event->getPlayer()->getY() . "',`z` = '" . $event->getPlayer()->getZ() . "' WHERE `name` = '" . $event->getPlayer()->getName() . "'";
 		if(!$result = $this->database->query($request)){
 			$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 		}
@@ -132,33 +148,28 @@ class Main extends PluginBase implements Listener{
 	}
 
 	public function onBreak(BlockBreakEvent $event){
-		if($this->disableBreak) $event->setCancelled();
-		return;
+		if($this->updateOnBreak) return;
 	}
 
 	public function onPlace(BlockPlaceEvent $event){
-		if($this->disablePlace) $event->setCancelled();
-		return;
+		if($this->updateOnPlace) return;
 	}
 
 	public function onChat(PlayerChatEvent $event){
-		if($this->disableChat) $event->setCancelled();
-		return;
+		if($this->updateChat) return;
 	}
 
 	public function onBucketFill(PlayerBucketFillEvent $event){
-		if($this->disableBucketUse) $event->setCancelled();
-		return;
+		if($this->updateOnBucketUse) return;
 	}
 
 	public function onBucketEmpty(PlayerBucketEmptyEvent $event){
-		if($this->disableBucketUse) $event->setCancelled();
-		return;
+		if($this->updateOnBucketUse) return;
 	}
 
 	public function onArmorChange(EntityArmorChangeEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `armor` = '" . $event->getEntity()->getHealth() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName(); // fix armor is heath
+			$request = "UPDATE `dynmap_players` SET `armor` = '" . $event->getEntity()->getHealth() . "' WHERE `name` = '" . $event->getEntity()->getName() . "'"; // fix armor is heath
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
@@ -168,7 +179,7 @@ class Main extends PluginBase implements Listener{
 
 	public function onDamage(EntityDamageEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `health` = '" . $event->getEntity()->getHealth() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName();
+			$request = "UPDATE `dynmap_players` SET `health` = '" . $event->getEntity()->getHealth() . "' WHERE `name` = '" . $event->getEntity()->getName() . "'";
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
@@ -178,7 +189,7 @@ class Main extends PluginBase implements Listener{
 
 	public function onHealthRegeneration(EntityRegainHealthEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `health` = '" . $event->getEntity()->getHealth() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName();
+			$request = "UPDATE `dynmap_players` SET `health` = '" . $event->getEntity()->getHealth() . "' WHERE `name` = '" . $event->getEntity()->getName() . "'";
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
@@ -188,7 +199,7 @@ class Main extends PluginBase implements Listener{
 
 	public function onTeleport(EntityTeleportEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName();
+			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "' WHERE `name` = '" . $event->getEntity()->getName() . "'";
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
@@ -198,7 +209,7 @@ class Main extends PluginBase implements Listener{
 
 	public function onLevelChange(EntityLevelChangeEvent $event){
 		if($event->getEntity() instanceof Player){
-			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "',`health` = '" . $event->getEntity()->getHealth() . "',`armor` = '" . $event->getEntity()->getHealth() . "' WHERE `dynmap_players`.`name` = " . $event->getEntity()->getName(); // added health and armor because manyworlds, fix armor!
+			$request = "UPDATE `dynmap_players` SET `world` = '" . $event->getEntity()->getLevel()->getName() . "' ,`x` = '" . $event->getEntity()->getX() . "',`y` = '" . $event->getEntity()->getY() . "',`z` = '" . $event->getEntity()->getZ() . "',`health` = '" . $event->getEntity()->getHealth() . "',`armor` = '" . $event->getEntity()->getHealth() . "' WHERE `name` = '" . $event->getEntity()->getName() . "'"; // added health and armor because manyworlds, fix armor!
 			if(!$result = $this->database->query($request)){
 				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
 			}
