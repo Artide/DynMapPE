@@ -35,11 +35,13 @@ class Main extends PluginBase implements Listener{
 	}
 
 	public function onDisable(){
-		$request = "DELETE FROM `dynmap_players`";
-		if(!$result = $this->database->query($request)){
-			$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
+		if($this->database !== null){
+			$request = "DELETE FROM `dynmap_players`";
+			if(!$result = $this->database->query($request)){
+				$this->getLogger()->notice('There was an error running the query [' . $this->database->error . ']');
+			}
+			$this->database->close();
 		}
-		$this->database->close();
 	}
 
 	private function makeSaveFiles(){
