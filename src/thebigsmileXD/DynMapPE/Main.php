@@ -1,6 +1,6 @@
 <?php
 
-namespace thebigsmileXD\MinigameBase;
+namespace thebigsmileXD\DynMapPE;
 
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
@@ -101,13 +101,15 @@ class Main extends PluginBase implements Listener{
 		else{
 			$this->getLogger()->notice('Successfully created database `dynmap_players`');
 		}
-		/*$request = "CREATE TABLE `dynmap_worlds` ( `id` INT NOT NULL AUTO_INCREMENT , `world` VARCHAR(100) NOT NULL , `spawn` DOUBLE NOT NULL, `y` DOUBLE NOT NULL, `z` DOUBLE NOT NULL, `health` DOUBLE NOT NULL, `armor` DOUBLE NOT NULL, PRIMARY KEY (`id`), UNIQUE (`name`)) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_unicode_ci";
-		if(!$result = $this->database->query($request)){
-			$this->getLogger()->critical('There was an error running the query [' . $this->database->error . ']');
-		}
-		else{
-			$this->getLogger()->notice('Successfully created database `dynmap_players`');
-		}*/
+		/*
+		 * $request = "CREATE TABLE `dynmap_worlds` ( `id` INT NOT NULL AUTO_INCREMENT , `world` VARCHAR(100) NOT NULL , `spawn` DOUBLE NOT NULL, `y` DOUBLE NOT NULL, `z` DOUBLE NOT NULL, `health` DOUBLE NOT NULL, `armor` DOUBLE NOT NULL, PRIMARY KEY (`id`), UNIQUE (`name`)) ENGINE = InnoDB CHARACTER SET utf8 COLLATE utf8_unicode_ci";
+		 * if(!$result = $this->database->query($request)){
+		 * $this->getLogger()->critical('There was an error running the query [' . $this->database->error . ']');
+		 * }
+		 * else{
+		 * $this->getLogger()->notice('Successfully created database `dynmap_players`');
+		 * }
+		 */
 	}
 
 	/* eventhandler */
@@ -201,6 +203,6 @@ class Main extends PluginBase implements Listener{
 			return;
 		}
 	}
-	
-	public function chunkUpdate()
+
+	public function chunkUpdate(){}
 }
