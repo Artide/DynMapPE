@@ -57,27 +57,37 @@ class Main extends PluginBase implements Listener{
 		$this->saveResource("messages.yml", false);
 		$this->reloadConfig();
 		$this->getConfig()->save();
+		mkdir($this->getDataFolder() . "/data/");
 		$this->messages = new Config($this->getDataFolder() . "messages.yml", Config::YAML);
+	}
+
+	public function onLoad(){
+		$this->saveFiles();
 	}
 
 	/* input handling */
 	public function onCommand(CommandSender $sender, Command $command, $label, array $args){
-		if($sender instanceof Player || $sender instanceof ConsoleCommandSender){ // commands for both console and player
-			switch($command->getName()){
-				case "commandplayerandconsole":
-					{
-						if($sender->hasPermission("dynmap.cmd")){
-							return true;
-						}
-						else{
-							$sender->sendMessage($this->getTranslation("no-permission"));
-							return true;
-						}
-						return false;
+		// if($sender instanceof Player || $sender instanceof ConsoleCommandSender){ // commands for both console and player
+		switch($command->getName()){
+			case "dynmaprefresh":
+				{
+					$sender->sendMessage($this->getTranslation("Will update dynmap"));
+					if($sender->hasPermission("dynmap.cmd")){
+						$this->saveFiles();
+						$sender->sendMessage($this->getTranslation("Successfully updated"));
+						return true;
 					}
-				default:
+					else{
+						$sender->sendMessage($this->getTranslation("no-permission"));
+					}
 					return false;
-			}
+				}
+			default:
+				{
+					$sender->sendMessage($this->getTranslation("Fail.."));
+					return false;
+				}
+			// }
 		}
 	}
 
@@ -218,4 +228,31 @@ class Main extends PluginBase implements Listener{
 	}
 
 	public function chunkUpdate(){}
+
+	public function saveFiles(){
+		foreach($this->getServer()->getLevels() as $level){
+			@mkdir($this->getDataFolder() . "/data/" . $level->getName());
+			$this->getServer()->broadcastMessage($this->getDataFolder() . "/data/" . $level->getName());
+			foreach($level->getChunks() as $chunk){
+				if($chunk->isLoaded()){
+					$chunkx = $chunk->getX();
+					$chunkz = $chunk->getZ();
+					$buffer = str_repeat("\0", 384);
+					for($x = 0; $x < 16; $x++){
+						for($z = 0; $z < 16; $z++){
+							$buffer{($x << 4) | $z} = $chunk->getHighestBlockAt($x, $z);
+							$offset = 0x100 | ($x << 3) | ($z >> 1);
+							$andMask = ($z & 1)?"\x0F":"\xF0";
+							$damage = $chunk->getHighestBlockAt($x, $z);
+							$orMask = ($z & 1)?chr($damage << 4):chr($damage & 0x0F);
+							$buffer{$offset} &= $andMask;
+							$buffer{$offset} |= $orMask;
+						}
+					}
+					$this->getServer()->broadcastMessage($this->getDataFolder() . "/data/" . $level->getName() . " / " . $chunkx . ":" . $chunkz . ".dat");
+					file_put_contents($this->getDataFolder() . "/data/" . $level->getName() . " / " . $chunkx . ":" . $chunkz . ".dat", $buffer);
+				}
+			}
+		}
+	}
 }

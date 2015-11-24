@@ -7,11 +7,11 @@
   authors: [thebigsmileXD]
   description: "DynMap portet to PocketMine"
   commands:
-   dynmap:
-    description: "Dynmap commands"
-    usage: "/dynmap <subcommand>"
+   dynmaprefresh:
+    description: "Dynmap refresh"
+    usage: "/dynmaprefresh"
     permission: dynmap.cmd
   permissions:
     dynmap.cmd:
       description: Allows users to use all /dynmap commands
-      default: op
+      default: true
